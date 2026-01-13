@@ -24,6 +24,10 @@ resource "aws_cognito_user_pool" "main" {
     required            = true
     mutable             = true
   }
+
+  lambda_config {
+    pre_sign_up = aws_lambda_function.pre_signup.arn
+  }
 }
 
 resource "aws_cognito_user_pool_client" "client" {

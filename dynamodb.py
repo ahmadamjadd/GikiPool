@@ -1,26 +1,38 @@
 import boto3
 import uuid
+import json # <--- 1. We need this
 
-# 1. Connect to DynamoDB (Resource is easier than Client)
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('GikiPool_Rides') # Make sure this matches your Terraform name exactly!
+table = dynamodb.Table('GikiPool_Rides')
 
 def lambda_handler(event, context):
-    # 2. Create a unique ID for the ride
+    # 2. Parse the incoming JSON body from the frontend
+    # API Gateway sends the body as a string, so we convert it to a dictionary
+    body = json.loads(event['body'])
+    
     ride_id = str(uuid.uuid4())
 
-    # 3. Put the item
+    # 3. Use the dynamic data
     table.put_item(
         Item={
-            'PK': str(ride_id), 
-            'SK': str(1234),    # REQUIRED (Partition Key)
-            'driver': 'Ahmad',      # Other data
-            'destination': 'Giki',
-            'price': 500
+            'PK': ride_id,
+            'SK': body['date'],        # Using date as Sort Key is a good practice!
+            'destination': body['destination'],
+            'price': body['price'],
+            'driver': 'Ahmad',         # We'll keep this hardcoded until we add Login
+            'status': 'open'           # Good to track if a ride is full or cancelled
         }
     )
     
     return {
         'statusCode': 200,
-        'body': f"Ride created successfully with ID: {ride_id}"
+        # We need to tell the browser "It's okay to read this" (CORS)
+        'headers': {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*' 
+        },
+        'body': json.dumps({ 
+            "message": "Ride created!", 
+            "ride_id": ride_id 
+        })
     }

@@ -58,6 +58,8 @@ resource "aws_iam_role" "iam_for_rides" {
   })
 }
 
+
+
 # Add Logging Permission to Rides Role
 resource "aws_iam_role_policy_attachment" "ride_logs" {
   role       = aws_iam_role.iam_for_rides.name
@@ -127,3 +129,28 @@ resource "aws_lambda_function" "create_ride" {
 
   source_code_hash = data.archive_file.ride_zip.output_base64sha256
 }
+
+# --- Function 3: List Rides ---
+# 1. Zip the new code
+data "archive_file" "list_rides" {
+  type        = "zip"
+  source_file = "${path.module}/list_rides.py"
+  output_path = "${path.module}/list_rides.zip"
+}
+
+# 2. Create the Lambda Function
+resource "aws_lambda_function" "list_rides" {
+  filename      = "list_rides.zip"
+  function_name = "list_rides"
+  role          = aws_iam_role.iam_for_rides.arn # Make sure this matches your existing role name!
+  handler       = "list_rides.lambda_handler"
+  runtime       = "python3.12"
+  source_code_hash = data.archive_file.list_rides.output_base64sha256
+
+  environment {
+    variables = {
+      TABLE_NAME = "GikiPool_Rides" # Or use aws_dynamodb_table.rides.name
+    }
+  }
+}
+

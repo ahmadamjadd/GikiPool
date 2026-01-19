@@ -55,3 +55,38 @@ output "api_endpoint" {
   value = aws_apigatewayv2_api.main.api_endpoint
   description = "The public URL for your API"
 }
+
+
+# =========================================================================
+# NEW: List Rides Configuration (GET /rides)
+# =========================================================================
+
+# 7. Integration: Connecting API Gateway to your 'list_rides' Lambda
+resource "aws_apigatewayv2_integration" "list_rides_integration" {
+  api_id           = aws_apigatewayv2_api.main.id
+  integration_type = "AWS_PROXY"
+
+  # We point to the list_rides function defined in your lambda.tf
+  integration_uri    = aws_lambda_function.list_rides.invoke_arn
+  integration_method = "POST" # Lambda integration always uses POST behind the scenes
+  payload_format_version = "2.0"
+}
+
+# 8. Route: Listening for GET requests on /rides
+resource "aws_apigatewayv2_route" "list_rides_route" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /rides" # <--- The URL path users will visit
+  target    = "integrations/${aws_apigatewayv2_integration.list_rides_integration.id}"
+}
+
+# 9. Permission: Allowing API Gateway to invoke the list_rides Lambda
+resource "aws_lambda_permission" "api_gw_list_rides_permission" {
+  statement_id  = "AllowExecutionFromAPIGatewayList"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.list_rides.function_name
+  principal     = "apigateway.amazonaws.com"
+
+  # Allow access specifically to the GET /rides route
+  source_arn = "${aws_apigatewayv2_api.main.execution_arn}/*/*/rides"
+}
+

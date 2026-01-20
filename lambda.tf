@@ -80,7 +80,8 @@ resource "aws_iam_policy" "dynamodb_access" {
           "dynamodb:GetItem",
           "dynamodb:Scan",
           "dynamodb:Query",
-          "dynamodb:UpdateItem"
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem"
         ]
         Effect   = "Allow"
         Resource = aws_dynamodb_table.gikipooltable.arn # Matches your dynamodb.tf
@@ -154,3 +155,26 @@ resource "aws_lambda_function" "list_rides" {
   }
 }
 
+# --- Function 4: Delete Ride ---
+# 1. Zip the delete_ride code
+data "archive_file" "delete_ride_zip" {
+  type        = "zip"
+  source_file = "delete_ride.py"
+  output_path = "delete_ride.zip"
+}
+
+# 2. Create the Lambda Function
+resource "aws_lambda_function" "delete_ride" {
+  filename      = "delete_ride.zip"
+  function_name = "delete_ride"
+  role          = aws_iam_role.iam_for_rides.arn # Re-using the rides role
+  handler       = "delete_ride.lambda_handler"
+  runtime       = "python3.12" # Matches your other functions
+  source_code_hash = data.archive_file.delete_ride_zip.output_base64sha256
+
+  environment {
+    variables = {
+      TABLE_NAME = "GikiPool_Rides" 
+    }
+  }
+}

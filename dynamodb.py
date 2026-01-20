@@ -1,38 +1,50 @@
 import boto3
 import uuid
-import json # <--- 1. We need this
+import json
 
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('GikiPool_Rides')
+# Make sure this matches the table name in your Terraform (e.g., GikiPool-Rides)
+table = dynamodb.Table('GikiPool_Rides') 
 
 def lambda_handler(event, context):
-    # 2. Parse the incoming JSON body from the frontend
-    # API Gateway sends the body as a string, so we convert it to a dictionary
-    body = json.loads(event['body'])
-    
-    ride_id = str(uuid.uuid4())
+    try:
+        # 1. Parse the incoming data
+        body = json.loads(event['body'])
+        
+        # 2. Get the User's Email from Cognito
+        # API Gateway validates the token and passes these details to Lambda
+        claims = event['requestContext']['authorizer']['jwt']['claims']
+        user_email = claims.get('email')
+        
+        ride_id = str(uuid.uuid4())
 
-    # 3. Use the dynamic data
-    table.put_item(
-        Item={
-            'PK': ride_id,
-            'SK': body['date'],        # Using date as Sort Key is a good practice!
-            'destination': body['destination'],
-            'price': body['price'],
-            'driver': 'Ahmad',         # We'll keep this hardcoded until we add Login
-            'status': 'open'           # Good to track if a ride is full or cancelled
+        # 3. Save to DynamoDB with the REAL email
+        table.put_item(
+            Item={
+                'PK': ride_id,
+                'SK': body['date'],
+                'destination': body['destination'],
+                'price': body['price'],
+                'driver': user_email,   # <--- storing the email here!
+                'status': 'open'
+            }
+        )
+        
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*' 
+            },
+            'body': json.dumps({ 
+                "message": "Ride created!", 
+                "ride_id": ride_id 
+            })
         }
-    )
-    
-    return {
-        'statusCode': 200,
-        # We need to tell the browser "It's okay to read this" (CORS)
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*' 
-        },
-        'body': json.dumps({ 
-            "message": "Ride created!", 
-            "ride_id": ride_id 
-        })
-    }
+    except Exception as e:
+        print(e) # This still logs to CloudWatch
+        return {
+            'statusCode': 500,
+            # 👇 sending the ACTUAL error message to the frontend
+            'body': json.dumps(f"Error details: {str(e)}") 
+        }

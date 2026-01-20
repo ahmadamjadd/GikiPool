@@ -1,7 +1,7 @@
 resource "aws_cognito_user_pool" "main" {
   name = "GikiPool-Users"
 
-  alias_attributes         = ["email"]
+  username_attributes = ["email"]
   auto_verified_attributes = ["email"]
 
   schema {
@@ -35,5 +35,13 @@ resource "aws_cognito_user_pool_client" "client" {
   generate_secret = false
 
   user_pool_id = aws_cognito_user_pool.main.id
+}
+
+output "user_pool_id" {
+  value = aws_cognito_user_pool.main.id
+}
+
+output "user_pool_client_id" {
+  value = aws_cognito_user_pool_client.client.id
 }
 

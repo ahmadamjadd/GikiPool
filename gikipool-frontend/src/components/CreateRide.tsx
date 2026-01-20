@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
+// 1. IMPORT the auth helper 🔑
+import { fetchAuthSession } from 'aws-amplify/auth';
 
 export default function CreateRide() {
   const [formData, setFormData] = useState({
@@ -8,28 +10,34 @@ export default function CreateRide() {
     price: ''
   });
 
-  const [status, setStatus] = useState(''); // To show success/error messages
+  const [status, setStatus] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => { // <--- Make this async
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('Sending...');
 
     try {
-      // 2. The API Call
+      // 2. GET THE TOKEN (The ID Badge) 🎫
+      const session = await fetchAuthSession();
+      const token = session.tokens?.idToken?.toString();
+
       // REPLACE with your actual Terraform Output URL
-      const apiUrl = "https://o8mmdman7b.execute-api.ap-south-1.amazonaws.com/create-ride";
+      const apiUrl = "https://q4ov0f7n07.execute-api.ap-south-1.amazonaws.com/create-ride";
       
       const response = await axios.post(apiUrl, {
-        // We ensure the numbers are actually numbers, not strings
         destination: formData.destination,
         date: formData.date,
         price: Number(formData.price) 
+      }, {
+        // 3. ATTACH THE HEADER (Show the ID Badge) 🛡️
+        headers: {
+          Authorization: token
+        }
       });
 
       console.log("Success:", response.data);
       setStatus('Ride created successfully! 🚗');
       
-      // Optional: Clear form
       setFormData({ destination: '', date: '', price: '' });
 
     } catch (error) {
@@ -40,17 +48,12 @@ export default function CreateRide() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center py-10">
-
-      {/* Main Content Area */}
       <main className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Create a New Ride</h2>
 
-        {/* The Form */}
-        {/* Status Message */}
         {status && <p className="text-center text-sm font-bold mb-4 text-blue-600">{status}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {/* Destination Input */}
           <div className="flex flex-col">
             <label htmlFor="destination" className="font-semibold text-gray-700 mb-1">Destination</label>
             <input
@@ -64,7 +67,6 @@ export default function CreateRide() {
             />
           </div>
 
-          {/* Date Input */}
           <div className="flex flex-col">
             <label htmlFor="date" className="font-semibold text-gray-700 mb-1">Departure Date</label>
             <input
@@ -77,7 +79,6 @@ export default function CreateRide() {
             />
           </div>
 
-          {/* Price Input */}
           <div className="flex flex-col">
             <label htmlFor="price" className="font-semibold text-gray-700 mb-1">Price per Seat (PKR)</label>
             <input
@@ -91,7 +92,6 @@ export default function CreateRide() {
             />
           </div>
 
-          {/* Submit Button */}
           <button 
             type="submit" 
             className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition duration-300 mt-4"

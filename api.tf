@@ -6,7 +6,7 @@ resource "aws_apigatewayv2_api" "main" {
   # 🔓 CORS Configuration: This allows your React app to talk to the backend
   cors_configuration {
     allow_origins = ["*"]  # In production, change this to your actual domain (e.g., https://gikipool.com)
-    allow_methods = ["POST", "GET", "OPTIONS"]
+    allow_methods = ["POST", "GET", "OPTIONS", "DELETE"]
     allow_headers = ["content-type", "authorization"]
     max_age       = 300
   }
@@ -37,6 +37,9 @@ resource "aws_apigatewayv2_route" "create_ride_route" {
   # The frontend will call: POST https://[api-url]/create-ride
   route_key = "POST /create-ride" 
   target    = "integrations/${aws_apigatewayv2_integration.create_ride_integration.id}"
+
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_auth.id
 }
 
 # 5. Permission: Allowing API Gateway to actually invoke the Lambda
@@ -90,3 +93,54 @@ resource "aws_lambda_permission" "api_gw_list_rides_permission" {
   source_arn = "${aws_apigatewayv2_api.main.execution_arn}/*/*/rides"
 }
 
+# =========================================================================
+# NEW: Security & Delete Configuration
+# =========================================================================
+
+# 1. The Authorizer (Gatekeeper) 🛡️
+# This tells API Gateway to check the token with your Cognito User Pool
+resource "aws_apigatewayv2_authorizer" "cognito_auth" {
+  api_id           = aws_apigatewayv2_api.main.id
+  authorizer_type  = "JWT"
+  identity_sources = ["$request.header.Authorization"]
+  name             = "cognito-authorizer"
+
+  jwt_configuration {
+    # ⚠️ VERIFY REGION: https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}
+    issuer   = "https://cognito-idp.ap-south-1.amazonaws.com/${aws_cognito_user_pool.main.id}"
+    audience = [aws_cognito_user_pool_client.client.id]
+  }
+}
+
+# 2. Integration: Connect API to 'delete_ride' Lambda
+resource "aws_apigatewayv2_integration" "delete_ride_integration" {
+  api_id           = aws_apigatewayv2_api.main.id
+  integration_type = "AWS_PROXY"
+  
+  integration_uri    = aws_lambda_function.delete_ride.invoke_arn
+  integration_method = "POST"
+  payload_format_version = "2.0"
+}
+
+# 3. Route: DELETE /rides/{id} (Protected!) 🔒
+resource "aws_apigatewayv2_route" "delete_ride_route" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "DELETE /rides/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.delete_ride_integration.id}"
+
+  # 🛑 SECURITY: We attach the authorizer here
+  # Only users with a valid token can use this route
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito_auth.id
+}
+
+# 4. Permission: Allow API Gateway to call the Lambda
+resource "aws_lambda_permission" "api_gw_delete_permission" {
+  statement_id  = "AllowExecutionFromAPIGatewayDelete"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.delete_ride.function_name
+  principal     = "apigateway.amazonaws.com"
+  
+  # Allow strictly for this specific route
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*/rides/*"
+}

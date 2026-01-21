@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import axios from 'axios';
-// 1. IMPORT the auth helper 🔑
 import { fetchAuthSession } from 'aws-amplify/auth';
 
 export default function CreateRide() {
@@ -17,11 +16,9 @@ export default function CreateRide() {
     setStatus('Sending...');
 
     try {
-      // 2. GET THE TOKEN (The ID Badge) 🎫
       const session = await fetchAuthSession();
       const token = session.tokens?.idToken?.toString();
 
-      // REPLACE with your actual Terraform Output URL
       const apiUrl = "https://q4ov0f7n07.execute-api.ap-south-1.amazonaws.com/create-ride";
       
       const response = await axios.post(apiUrl, {
@@ -29,7 +26,6 @@ export default function CreateRide() {
         date: formData.date,
         price: Number(formData.price) 
       }, {
-        // 3. ATTACH THE HEADER (Show the ID Badge) 🛡️
         headers: {
           Authorization: token
         }

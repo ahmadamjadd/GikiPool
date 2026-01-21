@@ -2,7 +2,6 @@ import boto3
 import json
 from decimal import Decimal
 
-# Helper class to convert DynamoDB Decimals to JSON numbers
 class DecimalEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Decimal):
@@ -10,11 +9,10 @@ class DecimalEncoder(json.JSONEncoder):
         return super(DecimalEncoder, self).default(obj)
 
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('GikiPool_Rides') # Ensure this matches your Terraform table name
+table = dynamodb.Table('GikiPool_Rides')
 
 def lambda_handler(event, context):
     try:
-        # scan() reads every item in the table (good for feeds, expensive for big data)
         response = table.scan()
         items = response.get('Items', [])
 
@@ -22,7 +20,7 @@ def lambda_handler(event, context):
             'statusCode': 200,
             'headers': {
                 'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*' # The "VIP Pass" for the browser
+                'Access-Control-Allow-Origin': '*'
             },
             'body': json.dumps(items, cls=DecimalEncoder)
         }

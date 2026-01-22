@@ -2,7 +2,9 @@
 
 # GikiPool - Carpooling for GIKI 🚗
 
-GikiPool is a serverless carpooling platform designed to help students share rides. It connects drivers with passengers, allowing users to list rides, view available options, and coordinate travel securely.
+Located in the remote region of Topi, GIKI poses a unique challenge for students: finding reliable and affordable transportation to and from campus is notoriously difficult.
+
+**GikiPool** is a dedicated serverless carpooling platform built specifically to solve this problem for the GIKI community. It connects students who own cars with those looking for a ride. Students driving home or to the city can post their travel plans, allowing peers to find rides easily. By pooling resources, GikiPool makes travel more accessible, convenient, and collaborative for everyone on campus.
 
 ## 🏗️ Architecture
 This project uses a fully serverless architecture on AWS, managed by **Terraform**.
@@ -49,30 +51,3 @@ terraform plan
 
 # Deploy infrastructure to AWS
 terraform apply --auto-approve
-```
-
-> **⚠️ Important:** After deployment, Terraform will output the `api_endpoint` and `user_pool_client_id`. Keep these safe!
-
-### 2. Frontend (React)
-
-Connect the frontend to your new AWS backend.
-
-1. Navigate to the `src` folder.
-2. Open `aws-exports.js` (or `main.tsx`) and update the **User Pool ID** and **Client ID** from the Terraform output.
-3. Open `src/components/CreateRide.tsx` and `RideList.tsx`.
-4. Update the `API_URL` variable with your **Terraform API Endpoint**.
-
-```bash
-# Install dependencies
-npm install
-
-# Run the development server
-npm run dev
-```
-## 📡 API Endpoints
-
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/rides` | List all available rides | No |
-| `POST` | `/create-ride` | Publish a new ride | **Yes (JWT)** |
-| `DELETE` | `/rides/{id}` | Delete a specific ride | **Yes (JWT)** |

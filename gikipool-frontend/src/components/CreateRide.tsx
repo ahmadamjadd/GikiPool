@@ -6,25 +6,29 @@ export default function CreateRide() {
   const [formData, setFormData] = useState({
     destination: '',
     date: '',
-    price: ''
+    price: '',
+    phone: ''
   });
 
   const [status, setStatus] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStatus('Sending...');
+    setStatus('');
+    setIsLoading(true);
 
     try {
       const session = await fetchAuthSession();
       const token = session.tokens?.idToken?.toString();
 
-      const apiUrl = "https://q4ov0f7n07.execute-api.ap-south-1.amazonaws.com/create-ride";
+      const apiUrl = "https://d848do806m.execute-api.ap-south-1.amazonaws.com/create-ride";
       
       const response = await axios.post(apiUrl, {
         destination: formData.destination,
         date: formData.date,
-        price: Number(formData.price) 
+        price: Number(formData.price),
+        phone: formData.phone
       }, {
         headers: {
           Authorization: token
@@ -32,70 +36,133 @@ export default function CreateRide() {
       });
 
       console.log("Success:", response.data);
-      setStatus('Ride created successfully! 🚗');
+      setStatus('success');
       
-      setFormData({ destination: '', date: '', price: '' });
+      setFormData({ destination: '', date: '', price: '', phone: '' });
 
     } catch (error) {
       console.error("Error:", error);
-      setStatus('Failed to create ride. Check console.');
+      setStatus('error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center py-10">
-      <main className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Create a New Ride</h2>
+    <div className="bg-white rounded-xl h-full flex flex-col" style={{ border: '1px solid #DDDDDD' }}>
+      <div className="px-8 py-6" style={{ borderBottom: '1px solid #EBEBEB' }}>
+        <h2 className="text-2xl font-semibold text-[#222222]">Offer a Ride</h2>
+      </div>
 
-        {status && <p className="text-center text-sm font-bold mb-4 text-blue-600">{status}</p>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          
-          <div className="flex flex-col">
-            <label htmlFor="destination" className="font-semibold text-gray-700 mb-1">Destination</label>
-            <input
-              type="text"
-              id="destination"
-              placeholder="e.g. Islamabad Toll Plaza"
-              className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-              value={formData.destination}
-              onChange={(e) => setFormData({...formData, destination: e.target.value})}
-              required
-            />
+      <div className="px-8 py-8 flex-1 flex flex-col">
+        {status === 'success' && (
+          <div className="mb-8 p-4 rounded-xl bg-[#F0FDF4] border border-[#86EFAC]">
+            <p className="text-sm text-[#166534] font-medium">Ride created successfully!</p>
+          </div>
+        )}
+        
+        {status === 'error' && (
+          <div className="mb-8 p-4 rounded-xl bg-[#FEF2F2] border border-[#FECACA]">
+            <p className="text-sm text-[#991B1B] font-medium">Failed to create ride. Please try again.</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
+          <div className="mb-10">
+            <h3 className="text-lg font-semibold text-[#222222] mb-6">Trip details</h3>
+            
+            <div className="grid grid-cols-2 gap-0 rounded-xl overflow-hidden" style={{ border: '1px solid #DDDDDD' }}>
+              <div className="p-5" style={{ borderRight: '1px solid #DDDDDD' }}>
+                <label className="block text-xs text-[#717171] mb-1">Destination</label>
+                <input
+                  type="text"
+                  placeholder="Where to?"
+                  className="w-full text-base font-medium text-[#222222] bg-transparent outline-none placeholder:text-[#B0B0B0]"
+                  value={formData.destination}
+                  onChange={(e) => setFormData({...formData, destination: e.target.value})}
+                  required
+                />
+              </div>
+              
+              <div className="p-5">
+                <label className="block text-xs text-[#717171] mb-1">Date & Time</label>
+                <input
+                  type="datetime-local"
+                  className="w-full text-base font-medium text-[#222222] bg-transparent outline-none"
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                  required
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-col">
-            <label htmlFor="date" className="font-semibold text-gray-700 mb-1">Departure Date</label>
-            <input
-              type="datetime-local"
-              id="date"
-              className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-              value={formData.date}
-              onChange={(e) => setFormData({...formData, date: e.target.value})}
-              required
-            />
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-[#222222] mb-6">Contact information</h3>
+            
+            <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #DDDDDD' }}>
+              <div className="p-5">
+                <label className="block text-xs text-[#717171] mb-1">Phone Number</label>
+                <input
+                  type="tel"
+                  placeholder="03XX-XXXXXXX"
+                  className="w-full text-base font-medium text-[#222222] bg-transparent outline-none placeholder:text-[#B0B0B0]"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  required
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-col">
-            <label htmlFor="price" className="font-semibold text-gray-700 mb-1">Price per Seat (PKR)</label>
-            <input
-              type="number"
-              id="price"
-              placeholder="e.g. 500"
-              className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-              value={formData.price}
-              onChange={(e) => setFormData({...formData, price: e.target.value})}
-              required
-            />
+          <div className="mb-10">
+            <h3 className="text-lg font-semibold text-[#222222] mb-6">Price per seat</h3>
+            
+            <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #DDDDDD' }}>
+              <div className="p-5 flex items-center justify-between">
+                <div>
+                  <label className="block text-xs text-[#717171] mb-1">Amount</label>
+                  <div className="flex items-center gap-1">
+                    <span className="text-base font-medium text-[#222222]">PKR</span>
+                    <input
+                      type="number"
+                      placeholder="500"
+                      className="w-32 text-base font-medium text-[#222222] bg-transparent outline-none placeholder:text-[#B0B0B0]"
+                      value={formData.price}
+                      onChange={(e) => setFormData({...formData, price: e.target.value})}
+                      required
+                      min="0"
+                    />
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-[#717171]">Suggested</p>
+                  <p className="text-sm font-medium text-[#222222]">PKR 400 - 600</p>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <div className="flex-1 min-h-[20px]"></div>
 
           <button 
             type="submit" 
-            className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition duration-300 mt-4"
+            disabled={isLoading}
+            className="w-full py-4 rounded-xl text-white font-semibold text-base transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            style={{ backgroundColor: '#FF6B35' }}
+            onMouseEnter={(e) => !isLoading && (e.currentTarget.style.backgroundColor = '#E85A2B')}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FF6B35'}
           >
-            Publish Ride 🚀
+            {isLoading ? 'Publishing...' : 'Publish Ride'}
           </button>
         </form>
-      </main>
+      </div>
+
+      <div className="px-8 py-5" style={{ borderTop: '1px solid #EBEBEB', backgroundColor: '#FAFAFA' }}>
+        <p className="text-sm text-[#717171]">
+          Your ride will be visible to all GIKI students.
+        </p>
+      </div>
     </div>
   );
 }

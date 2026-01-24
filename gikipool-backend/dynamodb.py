@@ -20,6 +20,7 @@ def lambda_handler(event, context):
                 'SK': body['date'],
                 'destination': body['destination'],
                 'price': body['price'],
+                'phone': body.get('phone', ''),
                 'driver': user_email,
                 'status': 'open'
             }

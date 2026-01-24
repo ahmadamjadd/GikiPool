@@ -1,5 +1,3 @@
-# 🚧 STILL IN PROGRESS 🚧
-
 # GikiPool - Carpooling for GIKI 🚗
 
 Located in the remote region of Topi, GIKI poses a unique challenge for students: finding reliable and affordable transportation to and from campus is notoriously difficult.
